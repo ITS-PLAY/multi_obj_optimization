@@ -25,7 +25,7 @@ main.py程序里
 1、计算相位方案的函数：
 
 ```
-plan_no,cycle,phase_plan = generate_traffic_time(data_file,traffic_light_file,phase_plan,inter_id)
+plan_no,cycle,phase_plan = generate_traffic_time(data_file,traffic_light_file,plan_para,inter_id)
 ```
 
 ```python
@@ -33,13 +33,13 @@ plan_no,cycle,phase_plan = generate_traffic_time(data_file,traffic_light_file,ph
 参数：
     data_file：过车数据文件文件名，包含路径信息。
     traffic_light_file：优化前信控文件名，包含路径信息。
-    phase_plan：后端传入的方案信息，包含相位编号、最小绿灯、黄灯时长、全红时长、行人时长。
+    plan_para：方案信息，包含最大周期、最小周期以及方案信息（相位编号、最小绿灯、黄灯时长、全红时长、行人时长）等。
     inter_id：交叉口的编号。
 返回值：
     元组，包含三个参数。
     plan_no：优化前信控文件里对应时段的方案编号
     cycle：周期时长。
-    phase_plan：方案信息，包含相位编号、最小绿灯、黄灯时长、全红时长、行人时长、相位时长。
+    plan_para：方案信息，包含最大周期、最小周期以及方案信息（相位编号、最小绿灯、黄灯时长、全红时长、行人时长、阶段（相位）时长）等。
 """
 ```
 
@@ -54,7 +54,7 @@ write_xml.write_plan_xml(plan_no, str(cycle), phase_plan, traffic_light_file, in
 参数：
     plan_no：优化前的信控文件里对应时段的方案编号。
     cycle：周期长度。
-    phase_plan：计算的方案信息，包含相位编号、最小绿灯、黄灯时长、全红时长、行人时长、阶段（相位）时长。
+    plan_para：方案信息，包含最大周期、最小周期以及方案信息（相位编号、最小绿灯、黄灯时长、全红时长、行人时长、阶段（相位）时长）等。
     traffic_light_file：优化前信控文件名，包含路径信息。
     inter_id：交叉口的编号。
 返回值：

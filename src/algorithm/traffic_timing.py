@@ -21,7 +21,7 @@ class TrafficTiming:
         - 预估车流通行量并输出最终配时方案
     """
 
-    def __init__(self, vehicle_flow_rate, traffic_light_file, phase_plan, inter_id):
+    def __init__(self, vehicle_flow_rate, traffic_light_file, plan_para, inter_id):
         '''
         两个关键参数：
             - 配置文件加载——config.json
@@ -30,7 +30,7 @@ class TrafficTiming:
         # self.config = config
         self.vehicle_flow_rate = vehicle_flow_rate
         self.traffic_light_file = traffic_light_file
-        self.phase_plan = phase_plan
+        self.plan_para = plan_para
         self.inter_id = inter_id
         self.flow_phase_para = None  # 关键相位信息
         self.phase_stage_infos = None  # ring-phase与stage-phase在各day_no,period_no下的对应关系
@@ -297,7 +297,6 @@ class TrafficTiming:
         print('- 聚类配时完成')
         self.get_result()
         print('- 配时输出方案完成')
-        print('完成配时分析！')
 
     def return_phase_plan(self):
         """
@@ -308,10 +307,10 @@ class TrafficTiming:
             cycle = self.time_out.iloc[i]['cycle']
             stage_id = self.time_out.iloc[i]['stage_no']
             stage_index = int(stage_id.split('P')[1]) - 1
-            self.phase_plan[stage_index]['stage_time'] = self.time_out.iloc[i]['phase_time']
-            self.phase_plan[stage_index]['yellow'] = self.time_out.iloc[i]['yellow']
-            self.phase_plan[stage_index]['all_red'] = self.time_out.iloc[i]['all_red']
-        return pd.Series([plan_no, cycle, self.phase_plan])
+            self.plan_para['phase_plan'][stage_index]['stage_time'] = self.time_out.iloc[i]['phase_time']
+            self.plan_para['phase_plan'][stage_index]['yellow'] = self.time_out.iloc[i]['yellow']
+            self.plan_para['phase_plan'][stage_index]['all_red'] = self.time_out.iloc[i]['all_red']
+        return pd.Series([plan_no, cycle, self.plan_para])
 
     def write_state_xml(self):  # 相序和相位不变下，微调时长
         domTree = xee.parse(self.traffic_light_file)

@@ -5,11 +5,11 @@ import xml.dom.minidom as XML
 
 class Traffic_Flow:
 
-    def __init__(self, data_file, traffic_light_file, phase_plan, inter_id, flow_interval=6):
+    def __init__(self, data_file, traffic_light_file, plan_para, inter_id, flow_interval=6):
         self.data_file = data_file
         self.traffic_light_file = traffic_light_file
 
-        self.phase_plan = phase_plan
+        self.plan_para = plan_para
         self.stage_phases = {}  # {key:value} == {phase_no:stage_no}
 
         self.inter_id = inter_id
@@ -173,12 +173,16 @@ class Traffic_Flow:
         return plan_no
 
     def add_cycle_length(self, sr):  # 增加最大周期和最小周期的限制
+        """
         day_info = self.day[sr['day_no']]
         min_cycle, max_cycle = "", ""
         for key, value in day_info.items():
             if sr['time'] >= key:
                 min_cycle = str(int(day_info[key]['min_cycle']))
                 max_cycle = str(int(day_info[key]['max_cycle']))
+        """
+        min_cycle = self.plan_para['min_cycle']
+        max_cycle = self.plan_para['max_cycle']
         return pd.Series([min_cycle, max_cycle])
 
     def get_links_no(self, sr):  # 流量加入links_no列（渠化信息）
@@ -370,21 +374,23 @@ class Traffic_Flow:
 
     # 根据传入的阶段数组，添加阶段编号，全红，黄灯，最小绿信息
     def read_stage_phase_from_input(self):
-        length = len(self.phase_plan)
+        phase_plan = self.plan_para['phase_plan']
+        length = len(phase_plan)
         for i in range(0, length):
-            phase_list = self.phase_plan[i]['id']
+            phase_list = phase_plan[i]['id']
             for j in range(0, len(phase_list)):
                 self.stage_phases[phase_list[j]] = 'P' + str(i + 1)
 
     def add_stage_no_from_input(self, sr):
+        phase_plan = self.plan_para['phase_plan']
         stage_no, all_red, yellow, min_green = '', '', '', ''
         if sr['phase'] != '':
             stage_no = self.stage_phases[sr['phase']]
             if stage_no != '':
                 stage_index = int(stage_no.split('P')[1]) - 1
-                all_red = self.phase_plan[stage_index]['all_red']
-                yellow = self.phase_plan[stage_index]['yellow']
-                min_green = self.phase_plan[stage_index]['min_green']
+                all_red = phase_plan[stage_index]['all_red']
+                yellow = phase_plan[stage_index]['yellow']
+                min_green = phase_plan[stage_index]['min_green']
         return pd.Series([stage_no, all_red, yellow, min_green])
 
     # 调用traffic_timing算法
