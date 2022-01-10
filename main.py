@@ -62,6 +62,5 @@ def generate_traffic_time(data_file,traffic_light_file,plan_para,inter_id):
 
 if __name__ == '__main__':
     plan_no,cycle,plan_para = generate_traffic_time(data_file,traffic_light_file,plan_para,inter_id)
-    print(plan_para)
     write_xml.write_plan_xml(plan_no, str(cycle), plan_para, traffic_light_file, inter_id)
 
