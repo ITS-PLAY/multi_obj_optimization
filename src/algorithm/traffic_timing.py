@@ -307,9 +307,9 @@ class TrafficTiming:
             cycle = self.time_out.iloc[i]['cycle']
             stage_id = self.time_out.iloc[i]['stage_no']
             stage_index = int(stage_id.split('P')[1]) - 1
-            self.plan_para['phase_plan'][stage_index]['stage_time'] = self.time_out.iloc[i]['phase_time']
-            self.plan_para['phase_plan'][stage_index]['yellow'] = self.time_out.iloc[i]['yellow']
-            self.plan_para['phase_plan'][stage_index]['all_red'] = self.time_out.iloc[i]['all_red']
+            self.plan_para['phase_plan'][stage_index]['green_time'] = int(self.time_out.iloc[i]['phase_time'])
+            self.plan_para['phase_plan'][stage_index]['yellow'] = int(self.time_out.iloc[i]['yellow'])
+            self.plan_para['phase_plan'][stage_index]['all_red'] = int(self.time_out.iloc[i]['all_red'])
         return pd.Series([plan_no, cycle, self.plan_para])
 
     def write_state_xml(self):  # 相序和相位不变下，微调时长

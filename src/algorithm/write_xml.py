@@ -36,7 +36,7 @@ def write_plan_xml(plan_no, cycle, plan_para, traffic_light_file, inter_id):
     phase_plan = plan_para['phase_plan']
     for i in range(0, len(phase_plan)):
         stage_info = phase_plan[i]['id']
-        stage_time = phase_plan[i]['stage_time']
+        green_time = phase_plan[i]['green_time']
         yellow = phase_plan[i]['yellow']
         all_red = phase_plan[i]['all_red']
         # 提取阶段里的所有相位
@@ -72,18 +72,18 @@ def write_plan_xml(plan_no, cycle, plan_para, traffic_light_file, inter_id):
 
             # 如果当前阶段的各环主相位编号与数组对应行的前一个元素的主相位编号不相同时，则将新建的字典添加到对应行数组中
             if len(ring_list[m]) == 0:
-                dict_info = {'id': ring_main_phase, 'start': '0', 'end': str(stage_time), 'overlap': '', 'barrier': '0',
+                dict_info = {'id': ring_main_phase, 'start': '0', 'end': str(green_time), 'overlap': '', 'barrier': '0',
                              'yellow': str(yellow), 'all_red': str(all_red)}
                 ring_list[m].append(dict_info)
             elif ring_main_phase != ring_list[m][ring_col_index[m]]['id']:
                 dict_info = {'id': ring_main_phase, 'start': ring_list[m][ring_col_index[m]]['end'], 'end': '',
                              'overlap': '', 'barrier': '0', 'yellow': str(yellow), 'all_red': str(all_red)}
-                dict_info['end'] = str(int(dict_info['start']) + stage_time)
+                dict_info['end'] = str(int(dict_info['start']) + green_time)
                 ring_list[m].append(dict_info)
                 ring_col_index[m] += 1
             else:
                 # 如果当前阶段的各环主相位编号与数组对应行的前一个元素的主相位编号相同，则直接更新前一个元素的结束时间 += 阶段时长
-                ring_list[m][ring_col_index[m]]['end'] = str(int(ring_list[m][ring_col_index[m]]['end']) + stage_time)
+                ring_list[m][ring_col_index[m]]['end'] = str(int(ring_list[m][ring_col_index[m]]['end']) + green_time)
                 ring_list[m][ring_col_index[m]]['yellow'] = str(yellow)
                 ring_list[m][ring_col_index[m]]['all_red'] = str(all_red)
 

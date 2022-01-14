@@ -321,13 +321,13 @@ class Traffic_Flow:
         phase_stage = {}  # 存储阶段里的相位集合
         stage_info = {}
         while judge_ring(col_increment, ring_list):
-            stage_time = sys.maxsize
+            green_time = sys.maxsize
             for row_index in range(0, len(ring_list)):
                 col_index = col_increment[row_index]
                 if col_increment[row_index] < len(ring_list[row_index]):
                     other_phase = ring_list[row_index][col_index]
                     other_phase_time = phases[other_phase]['split']
-                    stage_time = min(stage_time, other_phase_time)
+                    green_time = min(green_time, other_phase_time)
 
             for row_index in range(0, len(ring_list)):
                 other_phase = ring_list[row_index][col_increment[row_index]]
@@ -348,7 +348,7 @@ class Traffic_Flow:
                     else:
                         phase_stage[overlap] = stage
 
-                phases[other_phase]['split'] -= stage_time
+                phases[other_phase]['split'] -= green_time
                 if (phases[other_phase]['split'] == 0):
                     if (phases[other_phase]['all_red'] > stage_info[stage]['all_red']):
                         stage_info[stage]['all_red'] = phases[other_phase]['all_red']  # 添加阶段中，最大的全红时间
