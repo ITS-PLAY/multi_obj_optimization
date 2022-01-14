@@ -1,0 +1,31 @@
+defaultTasks 'push'
+
+project.group = 'city'
+project.version = "${VERSION}"
+
+ext {
+    env = System.getenv()
+}
+
+def imageName = "${env.HARBOR_REPO}/${env.HARBOR_CITY_PROJECT}/${project.name}:${env.TAG_VALUE}"
+
+task build(type: Exec) {
+    workingDir '.'
+    commandLine 'docker', 'build', '-t', imageName, '-f', 'Dockerfile', '.'
+}
+
+task push(type: Exec, dependsOn: 'build') {
+    commandLine 'docker', 'push', imageName
+}
+
+task rm(type: Exec) {
+    commandLine 'docker', 'image', 'rm', imageName
+}
+
+task stop(type: Exec) {
+    commandLine 'docker', 'rm', '-f', "${project.name}"
+}
+
+task test(type: Exec, dependsOn: 'build') {
+    commandLine 'docker', 'run', '-d', '--name', "${project.name}", '-e', 'dev-mode=true', '-p', '8080:8080',  '-v', '/Users/yangqiang/PycharmProjects/cs-ai-light/data:/cs-ai-light/data', imageName
+}
