@@ -67,9 +67,4 @@ async def create_recommendation(
     os.remove(light_fn)
     os.remove(flow_fn)
     LOG.info("file removed")
-    # TODO 算法代码调整后删除以下转换代码：部分int64字段转为int，否则无法序列化成功
-    for i in result['phase_plan']:
-        i['stage_time'] = int(i['stage_time'])
-        i['yellow'] = int(i['yellow'])
-        i['all_red'] = int(i['all_red'])
     return result
