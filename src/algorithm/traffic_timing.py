@@ -283,6 +283,7 @@ class TrafficTiming:
         self.time_out['phase_time'] = self.time_out['green'] + self.time_out['yellow'] + self.time_out['all_red']
         self.time_out.loc[:, 'cycle'] = self.time_out.groupby(['day_no', 'period_no', 'plan_no'])[
             'phase_time'].transform('sum')
+        print(self.time_out[['time','phase_time','stage_no']])
         return self
 
     def auto_timing(self):

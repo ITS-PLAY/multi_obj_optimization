@@ -17,7 +17,7 @@ class Traffic_Flow:
         self.flow_interval = flow_interval
         # 渠化映射表
         self.detect_road = {}  # {key:value} == {detect:road}
-        self.phase_lane = {}  # {key:{key:{key:value}}} == {road:{lane:{phase:value,sat_flow:value}}}
+        self.phase_lane = {}  # {key:{key:{key:value}}} == {camera:{lane:{phase:value,sat_flow:value}}}
         # 时段映射表
         self.schedule = {}  # {key:{key:value}} == {schedule_no:{node_name:node_value}}
         self.day = {}  # {key:{key:{key:value}} == {day_no:{start_time:{node_name:node_value}}
@@ -189,33 +189,6 @@ class Traffic_Flow:
     def get_links_no(self, sr):  # 流量加入links_no列（渠化信息）
         return self.plan[sr['plan_no']]
 
-    # 根据过车数据的时段，选取plan中对应的links编号；根据links编号，在detect_road中找links信息
-    def read_phase_info(self, links_no):  # TODO，添加时段信息(根据read_camera_info);混合车道包含两个相位的问题（phase_lane)
-        lights = self.rootNode.getElementsByTagName("light")  # 存在多个交叉口
-        for light in lights:
-            if light.hasAttribute("id") and light.getAttribute("id") == self.inter_id:  # 当前交叉口的编号
-                all_links = light.getElementsByTagName("links")  # 存在多个links（可能存在可变车道或者潮汐车道情况）
-                for all_link in all_links:
-                    if all_link.hasAttribute("no") and all_link.getAttribute("no") == links_no:
-                        links = all_link.getElementsByTagName("link")  # 当前渠化路段的编号
-                        for link in links:
-                            road = link.getAttribute("from")
-                            lane = link.getAttribute("fromLane")
-
-                            # 读取XML文件，返回路段-车道与相位的映射表
-                            if link.hasAttribute("phase"):
-                                phase = link.getAttribute("phase")
-                                sat_flow = link.getAttribute("sat_flow")
-                                if phase[0] == 'P':
-                                    continue
-                                if road in self.phase_lane.keys():
-                                    lane_info = {}
-                                    lane_info['phase'] = phase
-                                    lane_info['sat_flow'] = sat_flow
-                                    self.phase_lane[road][lane] = lane_info
-                                else:
-                                    self.phase_lane[road] = {}
-
     def caculate_flow(self, vehicle_flow, type=0):
 
         # if type==0:       #采用更新时间间隔内的过车，计算流量值
@@ -252,18 +225,46 @@ class Traffic_Flow:
         flows['week'] = flows.apply(lambda x: x['passtime'].strftime("%w"), axis=1)
         self.flows = flows
 
+    # 根据过车数据的时段，选取plan中对应的links编号；根据links编号，在detect_road中找links信息
+    def read_phase_info(self, links_no):  # TODO，添加时段信息(根据read_camera_info);混合车道包含两个相位的问题（phase_lane)
+        lights = self.rootNode.getElementsByTagName("light")  # 存在多个交叉口
+        for light in lights:
+            if light.hasAttribute("id") and light.getAttribute("id") == self.inter_id:  # 当前交叉口的编号
+                all_links = light.getElementsByTagName("links")  # 存在多个links（可能存在可变车道或者潮汐车道情况）
+                for all_link in all_links:
+                    if all_link.hasAttribute("no") and all_link.getAttribute("no") == links_no:
+                        links = all_link.getElementsByTagName("link")  # 当前渠化路段的编号
+                        for link in links:
+                            if not link.hasAttribute("camera"):
+                                continue
+                            camera = int(link.getAttribute("camera"))
+                            lane = link.getAttribute("fromLane")
+                            # 读取XML文件，返回路段-车道与相位的映射表
+                            if link.hasAttribute("phase"):
+                                phase = link.getAttribute("phase")
+                                sat_flow = link.getAttribute("sat_flow")
+                                if phase[0] == 'P':
+                                    continue
+                                if camera in self.phase_lane.keys():
+                                    lane_info = {}
+                                    lane_info['phase'] = phase
+                                    lane_info['sat_flow'] = sat_flow
+                                    self.phase_lane[camera][lane] = lane_info
+                                else:
+                                    self.phase_lane[camera] = {}
+
     # 添加路段编号
     def add_road_info(self):
         self.flows['road'] = self.flows['camera_id'].map(self.detect_road)
 
     def add_phase_no(self, sr):
         self.read_phase_info(sr['links_no'])  # 根据渠化编号，车道添加相位和饱和流率信息
-        lane = str(len(self.phase_lane[sr['road']]) - sr['lane'])
-        if lane not in self.phase_lane[sr['road']].keys():
+        lane = str(len(self.phase_lane[sr['camera_id']]) - sr['lane'])
+        if lane not in self.phase_lane[sr['camera_id']].keys():
             return pd.Series(['', ''])
         else:
             return pd.Series(
-                [self.phase_lane[sr['road']][lane]['phase'], self.phase_lane[sr['road']][lane]['sat_flow']])
+                [self.phase_lane[sr['camera_id']][lane]['phase'], self.phase_lane[sr['camera_id']][lane]['sat_flow']])
 
     # 根据起始时间和结束时间，读取对应时段的方案信息
     def read_traffic_plan(self, plan_no):

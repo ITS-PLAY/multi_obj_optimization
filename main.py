@@ -1,30 +1,24 @@
 from algorithm import write_xml, traffic_timing, traffic_flow
 
 ##示例文件
-data_file = "./data/3车流-过车数据CSV.csv"
-traffic_light_file = "./data/2信控.traffic_light.xml"
-inter_id = "cluster_1083998784_3978846542"
+data_file = "./data/车流-过车数据CSV.csv"
+traffic_light_file = "./data/信控.traffic_light.xml"
+inter_id = "cluster_1959493911_3978845890"
 
 phase_plan = [
-    {'id': ['2', '6'],
+    {'id': ['7'],
      'min_green': 15,
      'yellow': 3,
      'all_red': 0,
      'pedestrian_time':15},
 
-    {'id': ['1', '5'],
+    {'id': ['2','6'],
      'min_green': 15,
      'yellow': 3,
      'all_red': 0,
     'pedestrian_time':15},
 
-    {'id': ['4', '8'],
-     'min_green': 15,
-     'yellow': 3,
-     'all_red': 0,
-    'pedestrian_time':15},
-
-    {'id': ['3', '7'],
+    {'id': ['2','5'],
      'min_green': 15,
      'yellow': 3,
      'all_red': 0,
