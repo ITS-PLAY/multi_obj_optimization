@@ -21,7 +21,7 @@ class TrafficTiming:
         - 预估车流通行量并输出最终配时方案
     """
 
-    def __init__(self, vehicle_flow_rate, traffic_light_file, plan_para, inter_id):
+    def __init__(self, vehicle_flow_rate, traffic_light_file, inter_id, plan_para):
         '''
         两个关键参数：
             - 配置文件加载——config.json
@@ -283,7 +283,6 @@ class TrafficTiming:
         self.time_out['phase_time'] = self.time_out['green'] + self.time_out['yellow'] + self.time_out['all_red']
         self.time_out.loc[:, 'cycle'] = self.time_out.groupby(['day_no', 'period_no', 'plan_no'])[
             'phase_time'].transform('sum')
-        print(self.time_out[['time','phase_time','stage_no']])
         return self
 
     def auto_timing(self):

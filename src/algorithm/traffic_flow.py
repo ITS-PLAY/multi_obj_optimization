@@ -6,7 +6,7 @@ import xml.dom.minidom as XML
 
 class Traffic_Flow:
 
-    def __init__(self, data_file, traffic_light_file, plan_para, inter_id, flow_interval=6):
+    def __init__(self, data_file, traffic_light_file, inter_id, plan_para={}, flow_interval=6):
         self.data_file = data_file
         self.traffic_light_file = traffic_light_file
 
@@ -134,7 +134,7 @@ class Traffic_Flow:
             if (pl.hasAttribute("no")):
                 pl_no = pl.getAttribute("no")
                 links_no = pl.getAttribute("links")
-                self.plan[pl_no] = links_no
+                #self.plan[pl_no] = links_no
                 self.plan_phases[pl_no] = pl
 
     def add_day_no(self, sr):  # 流量加入day_no列
@@ -319,7 +319,8 @@ class Traffic_Flow:
             col_increment[i] = 0
 
         stage = 1
-        phase_stage = {}  # 存储阶段里的相位集合
+        phase_stage = {}  # 存储相位对应的阶段
+        stage_phase = {}  #存储阶段内的相位
         stage_info = {}
         while judge_ring(col_increment, ring_list):
             green_time = sys.maxsize
@@ -331,12 +332,15 @@ class Traffic_Flow:
                     green_time = min(green_time, other_phase_time)
 
             for row_index in range(0, len(ring_list)):
+                if col_increment[row_index] >= len(ring_list[row_index]):
+                    continue
                 other_phase = ring_list[row_index][col_increment[row_index]]
                 phase_stage[other_phase] = stage  # 插入阶段中的相位信息
                 stage_value = {}
                 stage_value['all_red'] = '0'
                 stage_value['yellow'] = '0'
                 stage_value['min_green'] = '0'
+                stage_value['green_time'] = green_time
                 stage_info[stage] = stage_value
                 # 插入搭接相位，暂时除行人相位外
                 overlap = phases[other_phase]['overlap']
@@ -359,6 +363,16 @@ class Traffic_Flow:
                         stage_info[stage]['min_green'] = phases[other_phase]['min_green']  # 添加阶段中，最大的全红时间
                     col_increment[row_index] += 1  # 更新环中的遍历序号
             stage += 1
+
+            for key in phase_stage.keys():
+                if phase_stage[key] not in stage_phase.keys():
+                    stage_phase[phase_stage[key]] = set()
+                stage_phase[phase_stage[key]].add(key)
+
+            for key in stage_info.keys():
+                stage_info[key]['id'] = list(stage_phase[key])
+                stage_info[key]['pedestrian_time'] = 15
+
         return phase_stage, stage_info
 
     # 在相位基础上，将流量添加阶段信息和全红信息
@@ -397,6 +411,23 @@ class Traffic_Flow:
 
     # 调用traffic_timing算法
     ##traffic_timing算法里屏蔽聚类算法（timing_cluster）
+
+    def read_stage(self):
+        self.read_plan_info()
+        #默认选第一个相位
+        plan_nos = list(self.plan_phases.keys())
+        phase_plan = []
+        if len(plan_nos) > 0:
+            ring_list, phases = self.read_traffic_plan(plan_nos[0])
+            _,stage_info = self.ring_to_stage(ring_list, phases)
+            for key in stage_info.keys():
+                stage_info[key]['all_red'] = int(stage_info[key]['all_red'])
+                stage_info[key]['yellow'] = int(stage_info[key]['yellow'])
+                stage_info[key]['min_green'] = int(stage_info[key]['min_green'])
+                stage_info[key]['pedestrian_time'] = int(stage_info[key]['pedestrian_time'])
+                stage_info[key]['green_time'] = int(stage_info[key]['green_time'])
+                phase_plan.append(stage_info[key])
+        return phase_plan
 
     def generate_flow(self):
         vehicle_flow = self.read_data()  # 读取指定交叉口的过车数据
