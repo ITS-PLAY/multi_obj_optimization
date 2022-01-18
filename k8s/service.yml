@@ -1,0 +1,18 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: signal-control-algorithm
+  namespace: cx-test
+spec:
+  ports:
+  - name: api
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: signal-control-algorithm
+  type: NodePort
+  #type: ClusterIP
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
