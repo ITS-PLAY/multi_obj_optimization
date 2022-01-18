@@ -22,10 +22,29 @@ sklearn： 0.0
 
 main.py程序里
 
-1、计算相位方案的函数：
+1、读取优化前的信控文件
+
+```python
+phase_plan_info = read_stage_from_XML(data_file, traffic_light_file,inter_id)
+```
+
+```python
+"""
+读取优化前的信控文件，输出优化前的相位信息.
+参数：
+    data_file：过车数据文件文件名，包含路径信息。
+    traffic_light_file：优化前信控文件名，包含路径信息。
+    inter_id：交叉口的编号。
+    plan_para：为空。
+返回值：
+    phase_plan：优化前的现有方案信息，包含相位编号、最小绿灯、黄灯时长、全红时长、行人时长（默认值15秒）、阶段（相位）时长等
+"""
+```
+
+2、计算相位方案的函数：
 
 ```
-plan_no,cycle,phase_plan = generate_traffic_time(data_file,traffic_light_file,plan_para,inter_id)
+plan_no,cycle,plan_para = generate_traffic_time(data_file,traffic_light_file,inter_id,plan_para)
 ```
 
 ```python
@@ -43,7 +62,7 @@ plan_no,cycle,phase_plan = generate_traffic_time(data_file,traffic_light_file,pl
 """
 ```
 
-2、写入XML函数：
+3、写入XML函数：
 
 ```
 write_xml.write_plan_xml(plan_no, str(cycle), phase_plan, traffic_light_file, inter_id)
