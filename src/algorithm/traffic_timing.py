@@ -126,11 +126,16 @@ class TrafficTiming:
         # 求解各相位显示绿灯时间:有效绿灯时间 * 流率比权重 + 启动损失时间 - 黄灯时间
         def get_green(sr):
             if sr['Yr'] > 0:  # 流率比之和不为0，加权占比求解有效
-                return sr['yi'] / sr['Yr'] * (sr['Tmm'] - (sr['all_red_lost'] + 3 * sr['n_phase'])) + 3 - sr['yellow']
+                return sr['yi'] / sr['Yr'] * (
+                            sr['Tmm'] - (sr['all_red_lost'] + self.start_loss * sr['n_phase'])) + self.start_loss - sr[
+                           'yellow']
             else:  # 调用其相位最小绿灯时间
                 return sr['min_green']
 
         def judge_min_green(sr):  # 判断当前绿灯是否小于最小绿灯时间
+            if 'less_pedestrian_time' in flow_rate.columns.tolist():
+                if sr['less_pedestrian_time']:
+                    return sr['less_pedestrian_time']
             return sr['phase_time'] < sr['min_green']
 
         flow_rate['Tmm'] = flow_rate.apply(get_Tmm, axis=1)
@@ -138,35 +143,36 @@ class TrafficTiming:
 
         flow_rate['phase_time'] = flow_rate.apply(get_green, axis=1)
 
-        # 调整非最小绿相位的绿灯分配方法
-        # TODO：建立循环，直到不存在小于最小绿的相位
-        flow_rate['less_pedestrian_time'] = flow_rate.apply(judge_min_green, axis=1)
-
-        sum_green = flow_rate.groupby(['day_no', 'period_no', 'plan_no', 'time']).apply(
-            lambda x: (x[x['less_pedestrian_time']]['min_green']).sum()).rename('sum_min_time').reset_index()
-
-        # sum_green['effective_sum_green'] = sum_green['Tmm'] - sum_green['sum_min_green'] - sum_green['n_phase'] * self.time_loss  #非最小绿相位的总时长
-        sum_yi = flow_rate.groupby(['day_no', 'period_no', 'plan_no', 'time']).apply(
-            lambda x: x[x['less_pedestrian_time'] == False]['yi'].sum()).rename('effective_sum_yi').reset_index()
-
-        flow_rate_temp = pd.merge(sum_green, sum_yi, on=['day_no', 'period_no', 'plan_no', 'time'], how='inner')
-        # flow_rate与flow_rate_temp进行左连接并赋值给flow_rate
-        flow_rate = pd.merge(flow_rate, flow_rate_temp, on=['day_no', 'period_no', 'plan_no', 'time'], how='left')
-
         def get_effective_green(sr):
             if sr['less_pedestrian_time']:
                 sr['phase_time'] = sr['min_green']
             else:
                 if sr['effective_sum_yi'] > 0:  # 流率比之和不为0，加权占比求解有效
                     sr['phase_time'] = math.ceil(sr['yi'] / sr['effective_sum_yi'] * (
-                            sr['Tmm'] - sr['sum_min_time'] - (sr['all_red_lost'] + 3 * sr['n_phase'])) + 3 - sr[
+                            sr['Tmm'] - sr['sum_min_time'] - (
+                                sr['all_red_lost'] + self.start_loss * sr['n_phase'])) + self.start_loss - sr[
                                                      'yellow'])  # 向上取整
                 else:  # 调用其相位最小绿灯时间
                     sr['phase_time'] = sr[
                         'min_green']  # self.config['road_settings'][sr['inter_name']]['min_green'][sr['phase']]
             return sr
 
-        flow_rate = flow_rate.apply(get_effective_green, axis=1)
+        # 调整非最小绿相位的绿灯分配方法
+        # 建立循环，直到不存在小于最小绿的相位
+        i = 0
+        while len(flow_rate[flow_rate['phase_time'] < flow_rate['min_green']]) > 0 or i < flow_rate['n_phase'].max():
+            flow_rate['less_pedestrian_time'] = flow_rate.apply(judge_min_green, axis=1)
+            sum_green = flow_rate.groupby(['day_no', 'period_no', 'plan_no', 'time']).apply(
+                lambda x: (x[x['less_pedestrian_time']]['min_green']).sum()).rename('sum_min_time').reset_index()
+            sum_yi = flow_rate.groupby(['day_no', 'period_no', 'plan_no', 'time']).apply(
+                lambda x: x[x['less_pedestrian_time'] == False]['yi'].sum()).rename('effective_sum_yi').reset_index()
+            flow_rate_temp = pd.merge(sum_green, sum_yi, on=['day_no', 'period_no', 'plan_no', 'time'], how='inner')
+            # flow_rate与flow_rate_temp进行左连接并赋值给flow_rate
+            flow_rate = pd.merge(flow_rate, flow_rate_temp, on=['day_no', 'period_no', 'plan_no', 'time'], how='left')
+            flow_rate = flow_rate.apply(get_effective_green, axis=1)
+            flow_rate = flow_rate.drop(columns=['sum_min_time', 'effective_sum_yi'], axis=1)
+            i += 1
+
         # flow_rate['phase_time'] += (flow_rate['all_red'] + flow_rate['yellow'])  # 补全全红时间和黄灯时间
         flow_rate['green_ratio'] = flow_rate['phase_time'] / flow_rate['Tmm']
         flow_rate['flow_ratio'] = flow_rate['yi'] / flow_rate['Yr']

@@ -182,7 +182,14 @@ class Traffic_Flow:
                 min_cycle = str(int(day_info[key]['min_cycle']))
                 max_cycle = str(int(day_info[key]['max_cycle']))
         """
-        min_cycle = self.plan_para['min_cycle']
+        min_cycle = 0
+        for i in range(0, len(self.plan_para['phase_plan'])):
+            min_green = self.plan_para['phase_plan'][i]['min_green']
+            yellow = self.plan_para['phase_plan'][i]['yellow']
+            all_red = self.plan_para['phase_plan'][i]['all_red']
+
+            min_cycle += (min_green + yellow + all_red)
+        min_cycle = max(min_cycle, self.plan_para['min_cycle'])
         max_cycle = self.plan_para['max_cycle']
         return pd.Series([min_cycle, max_cycle])
 
