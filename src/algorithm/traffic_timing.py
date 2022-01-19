@@ -148,7 +148,7 @@ class TrafficTiming:
                 sr['phase_time'] = sr['min_green']
             else:
                 if sr['effective_sum_yi'] > 0:  # 流率比之和不为0，加权占比求解有效
-                    sr['phase_time'] = math.ceil(sr['yi'] / sr['effective_sum_yi'] * (
+                    sr['phase_time'] = math.floor(sr['yi'] / sr['effective_sum_yi'] * (
                             sr['Tmm'] - sr['sum_min_time'] - (
                                 sr['all_red_lost'] + self.start_loss * sr['n_phase'])) + self.start_loss - sr[
                                                      'yellow'])  # 向上取整
