@@ -54,7 +54,7 @@ class TrafficTiming:
             {'links_no': 'count'}).reset_index()
 
         vehicle_flow_temp = self.vehicle_flow_rate
-        vehicle_flow_temp.loc[:, 'yi'] = vehicle_flow_temp['flow_rate'] / vehicle_flow_temp['sat_flow']  # 流率比
+        vehicle_flow_temp['yi'] = vehicle_flow_temp['flow_rate'] / vehicle_flow_temp['sat_flow']  # 流率比
 
         vehicle_flow_temp = vehicle_flow_temp.groupby(
             ['day_no', 'date', 'period_no', 'plan_no', 'time', 'stage_no', 'min_cycle', 'max_cycle']).agg(
@@ -74,11 +74,11 @@ class TrafficTiming:
             down = sr.quantile(self.scene_quantile)
             return sr[(sr >= down)].min()
 
-        vehicle_flow_unstack.loc[:, 'Yr_quantile'] = \
+        vehicle_flow_unstack['Yr_quantile'] = \
             vehicle_flow_unstack.groupby(['day_no', 'period_no', 'plan_no', 'time', 'min_cycle', 'max_cycle'])[
                 'Yr'].transform(Yr_quantile)
-        vehicle_flow_unstack = vehicle_flow_unstack.loc[
-                                   (vehicle_flow_unstack['Yr'] >= vehicle_flow_unstack['Yr_quantile'])].iloc[:, :-1]
+        vehicle_flow_unstack = vehicle_flow_unstack[
+                                   vehicle_flow_unstack['Yr'] >= vehicle_flow_unstack['Yr_quantile']].iloc[:, :-1]
 
         key_phase_flow_stack = vehicle_flow_unstack.groupby(
             ['day_no', 'period_no', 'plan_no', 'time', 'min_cycle', 'max_cycle']).agg(
@@ -196,12 +196,12 @@ class TrafficTiming:
         timing.fillna(method='bfill', inplace=True)
 
         # 对峰值时段内的时隙进行聚类
-        timing.loc[:, 'cluster_label'] = -1  # 平峰聚类标签统一设置为-1
+        timing['cluster_label'] = -1  # 平峰聚类标签统一设置为-1
         for name, group in timing.groupby(['day_no', 'period_no', 'plan_no']):
             # if 'flat' in name[-1]:
             # continue
             X = group.pivot(index='time', columns='stage_no', values=['slope', 'phase_time']).sort_index()
-            X.loc[:, 'n'] = np.arange(len(X)) * 6
+            X['n'] = np.arange(len(X)) * 6
             X.replace([np.inf, -np.inf], 0, inplace=True)
             X.fillna(0, inplace=True)
             time_label_dict = self._cluster(X)
@@ -253,16 +253,16 @@ class TrafficTiming:
             return sr[(sr <= up) & (sr >= down)].max()
 
         timing = self.timing
-        timing.loc[:, 'green'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
+        timing['green'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
             'phase_time'].transform(green_mean_quantile).astype(int)  # 绿灯时长直接取整，.apply(lambda x:math.ceil(x))
-        timing.loc[:, 'yellow'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
+        timing['yellow'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
             'yellow'].transform(yellow_red_mean_quantile).astype(int)
-        timing.loc[:, 'all_red'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
+        timing['all_red'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
             'all_red'].transform(yellow_red_mean_quantile).astype(int)
         # timing.drop_duplicates(subset=['inter_name', 'phase', 'week_label', 'peak_type', 'cluster_label'], inplace=True)
-        timing.loc[:, 'green_ratio'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
+        timing['green_ratio'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
             'green_ratio'].transform(green_mean_quantile)
-        timing.loc[:, 'flow_ratio'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
+        timing['flow_ratio'] = timing.groupby(['stage_no', 'day_no', 'period_no', 'plan_no', 'cluster_label'])[
             'flow_ratio'].transform(green_mean_quantile)
         self.timing = timing.reset_index(drop=True)
         return self
@@ -287,7 +287,7 @@ class TrafficTiming:
         self.time_out = self.timing.sort_values(['day_no', 'period_no', 'time']).drop_duplicates(
             subcolumns).reset_index(drop=True)
         self.time_out['phase_time'] = self.time_out['green'] + self.time_out['yellow'] + self.time_out['all_red']
-        self.time_out.loc[:, 'cycle'] = self.time_out.groupby(['day_no', 'period_no', 'plan_no'])[
+        self.time_out['cycle'] = self.time_out.groupby(['day_no', 'period_no', 'plan_no'])[
             'phase_time'].transform('sum')
         return self
 

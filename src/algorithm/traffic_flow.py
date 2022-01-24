@@ -19,10 +19,10 @@ class Traffic_Flow:
         self.detect_road = {}  # {key:value} == {detect:road}
         self.phase_lane = {}  # {key:{key:{key:value}}} == {camera:{lane:{phase:value,sat_flow:value}}}
         # 时段映射表
-        self.schedule = {}  # {key:{key:value}} == {schedule_no:{node_name:node_value}}
-        self.day = {}  # {key:{key:{key:value}} == {day_no:{start_time:{node_name:node_value}}
+        self.schedule = {}     # {key:{key:value}} == {schedule_no:{node_name:node_value}}
+        self.day = {}          # {key:{key:{key:value}} == {day_no:{start_time:{node_name:node_value}}
         # 方案映射表
-        self.links_no = ''  # links_no
+        self.links_no = ''
         # self.plan = {}                         #{key:value} == {plan_no:links_no}
 
         self.plan_phases = {}  # {key:value} == {plan_no:xml.nodelist}
@@ -114,14 +114,14 @@ class Traffic_Flow:
                     hour = hour if len(hour) == 2 else '0' + hour
                     minute = minute if len(minute) == 2 else '0' + minute
                     h_m = hour + ":" + minute
-                    coord_type = (pd.getElementsByTagName("coord_type")[0]).childNodes[0].data
-                    control_type = (pd.getElementsByTagName("control_type")[0]).childNodes[0].data
+                    # coord_type = (pd.getElementsByTagName("coord_type")[0]).childNodes[0].data
+                    # control_type = (pd.getElementsByTagName("control_type")[0]).childNodes[0].data
                     max_cycle = (pd.getElementsByTagName("max_cycle")[0]).childNodes[0].data
                     min_cycle = (pd.getElementsByTagName("min_cycle")[0]).childNodes[0].data
                     plan_no = (pd.getElementsByTagName("plan_no")[0]).childNodes[0].data
                     period_info['no'] = pd_no
                     # period_info['coord_type'] = coord_type
-                    period_info['control_type'] = control_type
+                    # period_info['control_type'] = control_type
                     period_info['max_cycle'] = max_cycle
                     period_info['min_cycle'] = min_cycle
                     period_info['plan_no'] = plan_no
@@ -233,7 +233,7 @@ class Traffic_Flow:
         self.flows = flows
 
     # 根据过车数据的时段，选取plan中对应的links编号；根据links编号，在detect_road中找links信息
-    def read_phase_info(self, links_no):  # TODO，添加时段信息(根据read_camera_info);混合车道包含两个相位的问题（phase_lane)
+    def read_phase_info(self, links_no):  # TODO，混合车道包含两个相位的问题（phase_lane)
         lights = self.rootNode.getElementsByTagName("light")  # 存在多个交叉口
         for light in lights:
             if light.hasAttribute("id") and light.getAttribute("id") == self.inter_id:  # 当前交叉口的编号
@@ -242,10 +242,13 @@ class Traffic_Flow:
                     if all_link.hasAttribute("no") and all_link.getAttribute("no") == links_no:
                         links = all_link.getElementsByTagName("link")  # 当前渠化路段的编号
                         for link in links:
+                            lane = link.getAttribute("fromLane")
+
                             if not link.hasAttribute("camera"):
                                 continue
+
                             camera = int(link.getAttribute("camera"))
-                            lane = link.getAttribute("fromLane")
+
                             # 读取XML文件，返回路段-车道与相位的映射表
                             if link.hasAttribute("phase"):
                                 phase = link.getAttribute("phase")
@@ -266,7 +269,8 @@ class Traffic_Flow:
 
     def add_phase_no(self, sr):
         self.read_phase_info(sr['links_no'])  # 根据渠化编号，车道添加相位和饱和流率信息
-        lane = str(len(self.phase_lane[sr['camera_id']]) - sr['lane'])
+        camera_lane_max = max(list(self.phase_lane[sr['camera_id']].keys()))    #当前摄像头拍摄的车道组的最大编号
+        lane = str(int(camera_lane_max) - sr['lane'] + 1)
         if lane not in self.phase_lane[sr['camera_id']].keys():
             return pd.Series(['', ''])
         else:
@@ -313,7 +317,7 @@ class Traffic_Flow:
     def ring_to_stage(self, ring_list, phases):  # TODO:搭接相位的主相位超过两个，相位在周期内服务超过1次
         # 将NEMA的环信息 转换为阶段相位方式（划分stage1,stage2,……)
         ##按照每个环的相位顺序，遍历每个的每个相位：
-        ###纵向比较环中最小绿灯时长，并将该绿灯时长内的每个环相位存储为一个阶段，并编号；根据最小绿灯时长，当前阶段的相位都减去该值，作为下一次循环的相位绿灯。(设置同步启停的标志，南北搭接的标志，东西搭接的标志）
+        ###纵向比较环中最小绿灯时长，并将该绿灯时长内的每个环相位存储为一个阶段，并编号；根据最小绿灯时长，当前阶段的相位都减去该值，作为下一次循环的相位绿灯。
         ###按照上述步骤，依次编号阶段。
         def judge_ring(col_increment, ring_list):
             for i in range(0, len(ring_list)):

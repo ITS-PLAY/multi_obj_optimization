@@ -3,45 +3,55 @@ from algorithm import write_xml, traffic_timing, traffic_flow
 ##示例文件
 data_file = "./data/过车数据CSV.csv"
 traffic_light_file = "./data/信控.traffic_light.xml"
-inter_id = "cluster_1083998784_0"
+inter_id = "cluster_1959493911_3978845890"
 
 phase_plan = [
-    {'id': ["4","14","8","18"],
-     'min_green': 40,
-     'yellow': 3,
-     'all_red': 0,
-     'pedestrian_time':15},
-
-    {'id': ["7","3"],
-     'min_green': 40,
-     'yellow': 3,
-     'all_red': 0,
-    'pedestrian_time':15},
-
-    {'id': ["6","16","2","12"],
-     'min_green': 15,
-     'yellow': 3,
-     'all_red': 0,
-    'pedestrian_time':15},
-
-    {'id': ["5"],
-     'min_green': 15,
-     'yellow': 3,
-     'all_red': 0,
-     'pedestrian_time': 15},
-
-    {'id': ["1"],
-     'min_green': 30,
-     'yellow': 3,
-     'all_red': 0,
-     'pedestrian_time': 15},
+    {
+      "id": [
+        "4",
+        "8",
+        "18"
+      ],
+      "min_green": 15,
+      "yellow": 3,
+      "all_red": 2,
+      "pedestrian_time": 15
+    },
+    {
+      "id": [
+        "3",
+        "7"
+      ],
+      "min_green": 15,
+      "yellow": 3,
+      "all_red": 2,
+      "pedestrian_time": 15
+    },
+    {
+      "id": [
+        "16"
+      ],
+      "min_green": 15,
+      "yellow": 3,
+      "all_red": 2,
+      "pedestrian_time": 15
+    },
+    {
+        "id": [
+            "18"
+        ],
+        "min_green": 15,
+        "yellow": 3,
+        "all_red": 2,
+        "pedestrian_time": 15
+    }
 ]
 
 plan_para ={
             'goal':1,
-            'max_cycle': 150,
-            'min_cycle': 60,
-            'step':2,
+            'max_cycle': 180,
+            'min_cycle': 30,
+            'step':3,
             'phase_plan':phase_plan}
 
 
@@ -88,5 +98,7 @@ if __name__ == '__main__':
 
     #生成新的方案
     plan_no,cycle,plan_para = generate_traffic_time(data_file,traffic_light_file,inter_id,plan_para)
+    print(plan_para)
+
     write_xml.write_plan_xml(plan_no, str(cycle), plan_para, traffic_light_file, inter_id)
 
