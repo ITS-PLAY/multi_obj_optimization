@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import time
 import xml.dom.minidom as XML
+from xml.dom import Node
 
 class Traffic_Flow:
 
@@ -285,35 +286,52 @@ class Traffic_Flow:
         ring_size = len(rings)
         ring_list = [[] for i in range(0, ring_size)]
         i = 0
+
         for ring in rings:
+            j = 0
+            for element in ring.childNodes:
+                if element.nodeType == Node.ELEMENT_NODE:
+                    phase_info = {}
+                    if j == 0 and element.nodeName == 'barrier':
+                        phase_info['phase'] = '0'
+                        phase_info['barrier'] = '1'
+                        phase_info['split'] = 0
+                    elif element.nodeName == 'state':
 
-            phases_info = ring.getElementsByTagName("state")
-            for ph in phases_info:
-                phase_info = {}
-                phase_no = ph.getAttribute("phase")
-                if ph.hasAttribute("overlap"):
-                    overlap = ph.getAttribute("overlap")
-                else:
-                    overlap = ""
-                green = ph.getAttribute("green")
-                yellow = ph.getAttribute("yellow")
-                all_red = ph.getAttribute("all_red")
-                min_green = ph.getAttribute("min")
-                max_green = ph.getAttribute("max")
-                phase_info['overlap'] = overlap
-                phase_info['green'] = green
-                phase_info['yellow'] = yellow
-                phase_info['all_red'] = all_red
-                phase_info['min_green'] = min_green
-                phase_info['max_green'] = max_green
+                        for key in element.attributes.keys():
+                            attr = element.attributes[key]
+                            phase_info[attr.name] = attr.value
+                        phase_info['barrier'] = '0'
+                        phase_info['split'] = int(phase_info['green']) + int(phase_info['yellow']) + int(
+                            phase_info['all_red'])
+                    elif j != 0 and element.nodeName == 'barrier':
+                        ring_list[i][-1]['barrier'] = '1'
+                        continue
 
-                phase_info['split'] = int(green) + int(yellow) + int(all_red)
-                phases[phase_no] = phase_info
-                ring_list[i].append(phase_no)
+                    ring_list[i].append(phase_info)
+
+                    j += 1
             i += 1
-        return ring_list, phases
 
-    def ring_to_stage(self, ring_list, phases):  # TODO:搭接相位的主相位超过两个，相位在周期内服务超过1次
+        # 环中第一个相位为空的特殊处理，将阶段时长置为另一环中同一屏障前所有相位的总时长
+        if ring_list[0][0]['phase'] == '0' or ring_list[1][0]['phase'] == '0':
+            phase_split_time = 0
+            null_phase_row = 0
+            for row in range(0, ring_size):
+                if ring_list[row][0]['phase'] == '0':
+                    null_phase_row = row
+                    continue
+                for col in range(0, len(ring_list[row])):
+                    phase_split_time += ring_list[row][col]['split']
+                    if ring_list[row][col]['barrier'] == '1':
+                        break
+            ring_list[null_phase_row][0]['split'] = phase_split_time
+            ring_list[null_phase_row][0]['all_red'] = '0'
+            ring_list[null_phase_row][0]['yellow'] = '0'
+            ring_list[null_phase_row][0]['min'] = '0'
+        return ring_list
+
+    def ring_to_stage(self,ring_list):  # TODO:搭接相位的主相位超过两个，相位在周期内服务超过1次
         # 将NEMA的环信息 转换为阶段相位方式（划分stage1,stage2,……)
         ##按照每个环的相位顺序，遍历每个的每个相位：
         ###纵向比较环中最小绿灯时长，并将该绿灯时长内的每个环相位存储为一个阶段，并编号；根据最小绿灯时长，当前阶段的相位都减去该值，作为下一次循环的相位绿灯。
@@ -330,65 +348,68 @@ class Traffic_Flow:
 
         stage = 1
         phase_stage = {}  # 存储相位对应的阶段
-        stage_phase = {}  #存储阶段内的相位
+        stage_phase = {}  # 存储阶段内的相位
         stage_info = {}
         while judge_ring(col_increment, ring_list):
             green_time = sys.maxsize
             for row_index in range(0, len(ring_list)):
                 col_index = col_increment[row_index]
                 if col_increment[row_index] < len(ring_list[row_index]):
-                    other_phase = ring_list[row_index][col_index]
-                    other_phase_time = phases[other_phase]['split']
+                    other_phase_time = ring_list[row_index][col_index]['split']
                     green_time = min(green_time, other_phase_time)
 
             for row_index in range(0, len(ring_list)):
                 if col_increment[row_index] >= len(ring_list[row_index]):
                     continue
-                other_phase = ring_list[row_index][col_increment[row_index]]
+                other_phase = ring_list[row_index][col_increment[row_index]]['phase']
                 phase_stage[other_phase] = stage  # 插入阶段中的相位信息
-                stage_value = {}
-                stage_value['all_red'] = '0'
-                stage_value['yellow'] = '0'
-                stage_value['min_green'] = '0'
-                stage_value['green_time'] = green_time
-                stage_info[stage] = stage_value
-                # 插入搭接相位，暂时除行人相位外
-                overlap = phases[other_phase]['overlap']
-                if overlap != "":
-                    if "," in overlap:
-                        list_phases = overlap.split(",")
-                        for i in range(0, len(list_phases)):
-                            if "P" not in list_phases[i]:
-                                phase_stage[list_phases[i]] = stage
+                if other_phase != '0':
+                    if stage not in stage_info.keys():
+                        stage_value = {}
+                        stage_value['id'] = [other_phase]
+                        stage_value['all_red'] = '0'
+                        stage_value['yellow'] = '0'
+                        stage_value['min_green'] = '0'
+                        stage_value['green_time'] = green_time
+                        stage_value['pedestrian_time'] = 15
+                        stage_info[stage] = stage_value
                     else:
-                        phase_stage[overlap] = stage
+                        stage_info[stage]['id'].append(other_phase)
+                    # 插入搭接相位，暂时除行人相位外
+                    if 'overlap' in ring_list[row_index][col_increment[row_index]].keys():
+                        overlap = ring_list[row_index][col_increment[row_index]]['overlap']
+                        if overlap != "":
+                            if "," in overlap:
+                                list_phases = overlap.split(",")
+                                for i in range(0, len(list_phases)):
+                                    if "P" not in list_phases[i]:
+                                        phase_stage[list_phases[i]] = stage
+                                        stage_info[stage]['id'].append(list_phases[i])
+                            else:
+                                phase_stage[overlap] = stage
+                                stage_info[stage]['id'].append(overlap)
 
-                phases[other_phase]['split'] -= green_time
-                if (phases[other_phase]['split'] == 0):
-                    if (phases[other_phase]['all_red'] > stage_info[stage]['all_red']):
-                        stage_info[stage]['all_red'] = phases[other_phase]['all_red']  # 添加阶段中，最大的全红时间
-                    if (phases[other_phase]['yellow'] > stage_info[stage]['yellow']):
-                        stage_info[stage]['yellow'] = phases[other_phase]['yellow']  # 添加阶段中，最大的全红时间
-                    if (phases[other_phase]['min_green'] > stage_info[stage]['min_green']):
-                        stage_info[stage]['min_green'] = phases[other_phase]['min_green']  # 添加阶段中，最大的全红时间
+                ring_list[row_index][col_increment[row_index]]['split'] -= green_time
+                if ring_list[row_index][col_increment[row_index]]['split'] == 0:
+                    if other_phase != '0':
+                        if (ring_list[row_index][col_increment[row_index]]['all_red'] > stage_info[stage]['all_red']):
+                            stage_info[stage]['all_red'] = ring_list[row_index][col_increment[row_index]][
+                                'all_red']  # 添加阶段中，最大的全红时间
+                        if (ring_list[row_index][col_increment[row_index]]['yellow'] > stage_info[stage]['yellow']):
+                            stage_info[stage]['yellow'] = ring_list[row_index][col_increment[row_index]][
+                                'yellow']  # 添加阶段中，最大的黄灯
+                        if (ring_list[row_index][col_increment[row_index]]['min'] > stage_info[stage]['min_green']):
+                            stage_info[stage]['min_green'] = ring_list[row_index][col_increment[row_index]][
+                                'min']  # 添加阶段中，最小绿
                     col_increment[row_index] += 1  # 更新环中的遍历序号
             stage += 1
-
-            for key in phase_stage.keys():
-                if phase_stage[key] not in stage_phase.keys():
-                    stage_phase[phase_stage[key]] = set()
-                stage_phase[phase_stage[key]].add(key)
-
-            for key in stage_info.keys():
-                stage_info[key]['id'] = list(stage_phase[key])
-                stage_info[key]['pedestrian_time'] = 15
 
         return phase_stage, stage_info
 
     # 在相位基础上，将流量添加阶段信息和全红信息
     def add_stage_no_from_XML(self, sr):
-        ring_list, phases = self.read_traffic_plan(sr['plan_no'])
-        phase_stage, stage_info = self.ring_to_stage(ring_list, phases)
+        ring_list = self.read_traffic_plan(sr['plan_no'])
+        phase_stage, stage_info = self.ring_to_stage(ring_list)
         stage_no, all_red, yellow, min_green = '', '', '', ''
         if sr['phase'] != '':
             stage_no = phase_stage[sr['phase']]
@@ -428,8 +449,8 @@ class Traffic_Flow:
         plan_nos = list(self.plan_phases.keys())
         phase_plan = []
         if len(plan_nos) > 0:
-            ring_list, phases = self.read_traffic_plan(plan_nos[0])
-            _,stage_info = self.ring_to_stage(ring_list, phases)
+            ring_list = self.read_traffic_plan(plan_nos[0])
+            _,stage_info = self.ring_to_stage(ring_list)
             for key in stage_info.keys():
                 stage_info[key]['all_red'] = int(stage_info[key]['all_red'])
                 stage_info[key]['yellow'] = int(stage_info[key]['yellow'])

@@ -35,7 +35,6 @@ plan_para ={
             'step':3,
             'phase_plan':phase_plan}
 
-
 def generate_traffic_time(data_file,traffic_light_file,inter_id,plan_para):
     """
         生成配时方案的函数.
