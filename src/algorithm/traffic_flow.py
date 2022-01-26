@@ -255,13 +255,12 @@ class Traffic_Flow:
                                 sat_flow = link.getAttribute("sat_flow")
                                 if phase[0] == 'P':
                                     continue
-                                if camera in self.phase_lane.keys():
-                                    lane_info = {}
-                                    lane_info['phase'] = phase
-                                    lane_info['sat_flow'] = sat_flow
-                                    self.phase_lane[camera][lane] = lane_info
-                                else:
+                                if camera not in self.phase_lane.keys():
                                     self.phase_lane[camera] = {}
+                                lane_info = {}
+                                lane_info['phase'] = phase
+                                lane_info['sat_flow'] = sat_flow
+                                self.phase_lane[camera][lane] = lane_info
 
     # 添加路段编号
     def add_road_info(self):

@@ -8,49 +8,30 @@ inter_id = "cluster_1959493911_3978845890"
 phase_plan = [
     {
       "id": [
-        "4",
-        "8",
-        "18"
+        "2",
+        "6"
       ],
       "min_green": 15,
       "yellow": 3,
-      "all_red": 2,
+      "all_red": 0,
       "pedestrian_time": 15
     },
     {
       "id": [
-        "3",
+        "5",
         "7"
       ],
       "min_green": 15,
       "yellow": 3,
-      "all_red": 2,
+      "all_red": 0,
       "pedestrian_time": 15
-    },
-    {
-      "id": [
-        "16"
-      ],
-      "min_green": 15,
-      "yellow": 3,
-      "all_red": 2,
-      "pedestrian_time": 15
-    },
-    {
-        "id": [
-            "18"
-        ],
-        "min_green": 15,
-        "yellow": 3,
-        "all_red": 2,
-        "pedestrian_time": 15
     }
 ]
 
 plan_para ={
             'goal':1,
             'max_cycle': 180,
-            'min_cycle': 30,
+            'min_cycle': 60,
             'step':3,
             'phase_plan':phase_plan}
 
