@@ -1,39 +1,41 @@
-from algorithm import write_xml, traffic_timing, traffic_flow
+from algorithm import write_xml, traffic_timing,traffic_timing_mobj, traffic_flow
 
 ##示例文件
 data_file = "./data/过车数据CSV.csv"
 traffic_light_file = "./data/信控.traffic_light.xml"
-inter_id = "cluster_1959493911_3978845890"
+inter_id = "cluster_1841075614_1841075725_3927056870_3927056898"
 
 phase_plan = [
-    {
-      "id": [
-        "2",
-        "6"
-      ],
-      "min_green": 15,
-      "yellow": 3,
-      "all_red": 0,
-      "pedestrian_time": 15
-    },
-    {
-      "id": [
-        "5",
-        "7"
-      ],
-      "min_green": 15,
-      "yellow": 3,
-      "all_red": 0,
-      "pedestrian_time": 15
-    }
-]
+    {'id': ['2', '6'],
+     'min_green': 15,
+     'yellow': 3,
+     'all_red': 0,
+     'pedestrian_time': 15},
 
-plan_para ={
-            'goal':1,
-            'max_cycle': 180,
-            'min_cycle': 60,
-            'step':3,
-            'phase_plan':phase_plan}
+    {'id': ['1', '5'],
+     'min_green': 15,
+     'yellow': 3,
+     'all_red': 0,
+     'pedestrian_time': 15},
+
+    {'id': ['4', '8'],
+     'min_green': 15,
+     'yellow': 3,
+     'all_red': 0,
+     'pedestrian_time': 15},
+
+    {'id': ['3', '7'],
+     'min_green': 15,
+     'yellow': 3,
+     'all_red': 0,
+     'pedestrian_time': 15}
+]
+plan_para = {
+    'goal': 1,
+    'max_cycle': 130,
+    'min_cycle': 60,
+    'step': 3,
+    'phase_plan': phase_plan}
 
 def generate_traffic_time(data_file,traffic_light_file,inter_id,plan_para):
     """
@@ -53,9 +55,18 @@ def generate_traffic_time(data_file,traffic_light_file,inter_id,plan_para):
     vehicle_flow = traffic_flow.Traffic_Flow(data_file, traffic_light_file, inter_id, plan_para)
     vehicle_flow.generate_flow()
 
-    traffic_time = traffic_timing.TrafficTiming(vehicle_flow.flows, traffic_light_file, inter_id, plan_para)
-    traffic_time.auto_timing()
-    return traffic_time.return_phase_plan()         #包含相位编号，周期时长，阶段信息
+    #优化目标的选择
+    ## 当优化目标为0时，表示空放最小的算法；
+    ## 当优化目标为1时，表示排队长度最小的算法。
+    if plan_para['goal'] == 0:
+        traffic_time = traffic_timing.TrafficTiming(vehicle_flow.flows, traffic_light_file, inter_id, plan_para)
+        traffic_time.auto_timing()
+        return traffic_time.return_phase_plan()  # 包含相位编号，周期时长，阶段信息
+    elif plan_para['goal'] == 1:
+        traffic_time = traffic_timing_mobj.TrafficTimingMultiObject(vehicle_flow.flows, traffic_light_file, inter_id, plan_para,
+                                                                    vehicle_flow.phase_lane)
+        traffic_time.auto_timing()
+        return traffic_time.return_phase_plan()  # 包含相位编号，周期时长，阶段信息
 
 def read_stage_from_XML(data_file, traffic_light_file, inter_id):
     """

@@ -269,18 +269,6 @@ class TrafficTiming:
 
     def get_result(self):
         self.timing = self.timing[['day_no', 'period_no', 'plan_no', 'time', 'stage_no', 'green', 'yellow', 'all_red']]
-        #         self.timing = self.timing[['stage_no', 'day_no','period_no', 'time', 'phase_time', 'n_phase','green_ratio','flow_ratio']]
-        #         self.time_out = self.timing.set_index(['day_no','period_no', 'time', 'stage_no'])['phase_time'].unstack().reset_index()
-        #         self.time_out = self.time_out.rename(columns={1:'stage1',2:'stage2',3:'stage3'})
-        #         green_ratio_out = self.timing.set_index(['day_no','period_no', 'time', 'stage_no'])['green_ratio'].unstack().reset_index()
-        #         green_ratio_out = green_ratio_out.rename(columns={1:'green_ratio1',2:'green_ratio2',3:'green_ratio3'})
-        #         flow_ratio_out = self.timing.set_index(['day_no','period_no', 'time', 'stage_no'])['flow_ratio'].unstack().reset_index()
-        #         flow_ratio_out = flow_ratio_out.rename(columns={1:'flow_ratio1',2:'flow_ratio2',3:'flow_ratio3'})
-        #         self.time_out.loc[:, 'T'] = self.time_out.sum(axis=1)
-
-        #         #self.time_out分别与green_ratio_out,flow_ratio_out进行左连接，拼接到self.time_out上
-        #         self.time_out = pd.merge(self.time_out,green_ratio_out,on=['day_no','period_no', 'time'],how = 'left')
-        #         self.time_out = pd.merge(self.time_out,flow_ratio_out,on=['day_no','period_no', 'time'],how = 'left')
 
         subcolumns = self.timing.columns.tolist()
         subcolumns.remove('time')
